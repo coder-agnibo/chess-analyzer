@@ -1,7 +1,6 @@
 import { Chess } from 'chess.js';
 // Depending on how stockfish.js is exposed, import might differ
 import Stockfish from 'stockfish/src/stockfish-nnue-16.js?worker';
-// import Stockfish from 'stockfish/src/stockfish-nnue-16-single.js?worker';
 
 
 const stockfishWorker = new Stockfish();
@@ -32,17 +31,14 @@ Nxc2 21. Rc1 Rge5 22. Kf1 Re1+ 23. Rxe1 Rxe1# 0-1`
 
 
 export function getMovesListFromPGN() {
-    stockfishWorker.onmessage = (e) => {
-        // Handle messages from the worker
-        console.log(e)
-    };
-    console.log("WWWW", stockfishWorker)
+    // stockfishWorker.onmessage = (e) => {
+    //     // Handle messages from the worker
+    //     console.log(e)
+    // };
+    // console.log("WWWW", stockfishWorker)
 
-    // Sending messages to the worker
-    stockfishWorker.postMessage('uci');
-    
-    // stockfishWorker.postMessage('isready');
-    
+    // // Sending messages to the worker
+    // stockfishWorker.postMessage('uci');
     
     
 
@@ -50,6 +46,7 @@ export function getMovesListFromPGN() {
     const chess = new Chess();
     chess.loadPgn(PGNString);
     const movesHistory = _.cloneDeep(chess.history());
+    console.log(movesHistory)
     return movesHistory;
 }
 

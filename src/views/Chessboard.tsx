@@ -2,11 +2,13 @@ import { useState } from 'react';
 import Chessboard from 'chessboardjsx';
 import { getMovesListFromPGN, playMove } from "../utils/chessUtil";
 
+type povType = "white" | "black";
 
 import { useEffect } from 'react';
 
 function App() {
   const [position, setPosition] = useState("start");
+  const [pov, setPov] = useState("black" as povType);
 
 
   const animateMoves = (moves: Array<string>) => {
@@ -31,7 +33,7 @@ function App() {
   return (
     <>
       <div>
-        <Chessboard position={position} orientation='black'/>
+        <Chessboard position={position} orientation={pov}/>
       </div>
     </>
   )
