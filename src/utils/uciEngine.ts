@@ -11,7 +11,7 @@ interface UCIOutput {
     depth: number;
     seldepth: number;
     multipv: number;
-    score: string; // Keeping it simple as a string. You can create a more complex structure if needed.
+    score: UCIScore; // Keeping it simple as a string. You can create a more complex structure if needed.
     nodes: number;
     nps: number;
     time: number;
@@ -33,7 +33,7 @@ export class UCIWrapper {
     public uciok: boolean;
     private lock: boolean = false;
     private callbackfn: Function | undefined = () => { };
-    private multipv_n: number = 3;
+    private multipv_n: number = 1;
 
     constructor(worker: Worker) {
         this.worker = worker;
@@ -46,7 +46,7 @@ export class UCIWrapper {
 
     // Send a command to the engine
     public sendCommand(command: string): void {
-        console.log("DEBUG SEND:", command);
+        // console.log("DEBUG SEND:", command);
         if (!this.uciok && command != "uci" && command != "isready") {
             return;
         }
@@ -83,7 +83,7 @@ export class UCIWrapper {
         const tokens = uciString.split(' ');
         const infoObject: Partial<UCIOutput> = {};
         let key: keyof UCIOutput | '' = '';
-        let value: string | number;
+        let value: string | number | UCIScore;
         let isPv: boolean = false;
 
         for (let i = 0; i < tokens.length; i++) {
@@ -98,6 +98,7 @@ export class UCIWrapper {
                 key = token;
                 value = tokens[++i]; // 'cp' or 'mate'
                 value += ' ' + tokens[++i]; // score value
+                value = this.parseScore(value as string);
             } else if (token === 'pv') {
                 key = token;
                 isPv = true
@@ -130,7 +131,7 @@ export class UCIWrapper {
     // Handle messages received from the engine
     private handleMessage(message: MessageEvent): void {
         // Process the message from the engine
-        console.log("DEBUG DATA: ", message.data);
+        // console.log("DEBUG DATA: ", message.data);
 
         if (message.data == "uciok") {
             this.uciok = true;
@@ -231,6 +232,9 @@ export class UCIWrapper {
 
     // Set the position on the engine
     public setPosition(fen: string): void {
+        if (fen.startsWith('start')) {
+            this.sendCommand('position startpos');
+        }
         this.sendCommand(`position fen ${fen}`);
     }
 
@@ -261,9 +265,7 @@ export class UCIWrapper {
                 // Process the analysis result
                 this.callbackfn = (data: string) => {
                     if (data.startsWith('info') && data.includes('depth')) {
-                        console.log("DEBUG LOGGG:", data)
                         const result = this.parseUCIOutput(data);
-                        console.log("DEBUG RESSSSU:", result)
                         if (result.depth === depth) {
                             const i = variations.length;
                             variations[i] = result;

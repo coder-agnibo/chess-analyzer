@@ -16,6 +16,18 @@ import _ from 'lodash';
 
 // var stockfish = STOCKFISH();
 
+
+interface ChessMoveAnalysis {
+  move_no: number;
+  move: string;
+  evaluation: string;
+  top3_engine_lines: string[];
+  is_best_move: boolean;
+  is_top3_moves: boolean;
+  opening: string;
+}
+
+
 export const PGNString = `[Event "Live Chess"]
 [Site "Chess.com"]
 [Date "2023.11.11"]
@@ -35,48 +47,29 @@ Qe1 Nbd7 9. Nxe5 Nxe5 10. Qxe5+ Be7 11. Bf5 O-O 12. Bxg4 Nxg4 13. Qxd5 Bb4 14.
 Qxd8 Raxd8 15. d3 Bxc3 16. bxc3 Rfe8 17. Bg5 Rd5 18. c4 Rxg5 19. f3 Ne3 20. Rf2
 Nxc2 21. Rc1 Rge5 22. Kf1 Re1+ 23. Rxe1 Rxe1# 0-1`
 
-function SANtoUCI(sanMove: string, chess: Chess) {
-    const moveObj = chess.move(sanMove, { sloppy: true });
-    if (moveObj === null) {
-      throw new Error('Invalid SAN move');
+function SANtoUCI(sanMoves: string[]) {
+    const chess = new Chess();
+    const uciMoves: string[] = [];
+
+    for (let sanMove of sanMoves) {
+      const moveObj = chess.move(sanMove);
+      if (moveObj === null) {
+        throw new Error('Invalid SAN move');
+      }
+      let uciMove = moveObj.from + moveObj.to;
+      if (moveObj.promotion) {
+        uciMove += moveObj.promotion;
+      }
+      uciMoves.push(uciMove)
     }
-    let uciMove = moveObj.from + moveObj.to;
-    if (moveObj.promotion) {
-      uciMove += moveObj.promotion;
-    }
-    chess.undo(); // Undo the move to not affect the board state
-    return uciMove;
+
+    return uciMoves;
   }
 
 
 
-export async function getMovesListFromPGN() {
+export function getMovesListFromPGN(pgnString: string) {
     const chess = new Chess();
-    const uci = new UCIWrapper(stockfishWorker);
-    window.uci = uci;
-    await uci.wait_for_readyok();
-    
-    uci.init();
-    await timeout(50);
-    
-    uci.setDefaultOptions();
-    // await uci.wait_for_readyok();
-    alert("Hi");
-
-    // uci.setPosition(chess.fen());
-    const result = await uci.analyze({ depth: 20, timeout: 5000 });
-    console.log("result", result);
-    // uci.init();
-
-    // setTimeout(() => {
-    //     uci.setPosition(chess.fen());
-    //     uci.analyze().then((result) => {
-    //         console.log(result);
-    //     });
-    // }, 1000);
-
-    
-    
     chess.loadPgn(PGNString);
     const movesHistory = _.cloneDeep(chess.history());
     console.log(movesHistory)
@@ -90,12 +83,64 @@ export function playMove(move: string, startFen: string | undefined): string {
     return chess.fen();
 }
 
-// export function getEvaluation(fen: string) {
-//     engine.position(fen);
-// }
 
 
-// const engine = new Stockfish();
+export async function analyzeGame() {
+    const movesList = await getMovesListFromPGN(PGNString as string);
+
+    const sampleOutput: ChessMoveAnalysis = {
+      "move_no": 1,
+      "move": "e4",
+      "evaluation": "+0.37",
+      "top3_engine_lines": [
+          "e5 Nf3 Nc6 d4 exd4 Nxd4 Nf6 Nc3 Bb4",
+          "c5 Nf3 Nc6 d4 cxd4 Nxd4 e5 Nb3 Nf6 Bg5",
+          "e6 d4 d5 Nc3 Bb4 Qg4 Kf8 Bg5 Nf6 Qg3 dxe4 O-O-O Bxc3"
+      ],
+      "is_best_move": false,
+      "is_top3_moves": false,
+      "opening": "King's Pawn Game"
+  }
+
+  const chess = new Chess();
+  const uci = new UCIWrapper(stockfishWorker);
+  uci.init();
+  window.uci = uci;
+  window.stockfish = stockfishWorker;
+  uci.setDefaultOptions();
+  const uciMoves = SANtoUCI(movesList);
+
+  // console.log(uciMoves);
+  // alert("Hi")
+  // uci.setPosition('startpos');
+  // await uci.wait_for_readyok();
+  // alert("hello")
+
+  // const analysedMoves: ChessMoveAnalysis[] = [];
+
+  // for (let movei in uciMoves) {
+  //   const move = movesList[movei];
+  //   const uciMove = uciMoves[movei];
 
 
+  //   uci.sendCommand(`position moves ${uciMove}`);
+  //   await uci.wait_for_readyok();
+  //   const response = await uci.analyze({depth: 16});
+  //   console.log(response);
 
+  //   analysedMoves.push({
+  //     move_no: parseInt(movei) + 1,
+  //     move: move,
+  //     evaluation: response.pvs[0].score.toString(),
+  //     top3_engine_lines: response.pvs.map(pv => pv.pv.join(' ')),
+  //     is_best_move: response.bestmove === uciMove,
+  //     is_top3_moves: response.pvs.map(pv => pv.pv[0]).includes(uciMove),
+  //     opening: ""//chess.pgn().split('\n')[0].split('"')[1]
+  //   })
+
+  //   // console.log(fen)
+  // }
+  // console.log(analysedMoves);
+  // return analysedMoves;
+
+}
