@@ -1,7 +1,14 @@
 import { Chess } from 'chess.js';
 // Depending on how stockfish.js is exposed, import might differ
 import Stockfish from 'stockfish/src/stockfish-nnue-16.js?worker';
+import { UCIWrapper } from "./uciEngine";
+import { timeout } from "./timeout";
 
+declare global {
+    interface Window {
+        stockfish: typeof Stockfish;
+    }
+}
 
 const stockfishWorker = new Stockfish();
 
@@ -28,22 +35,48 @@ Qe1 Nbd7 9. Nxe5 Nxe5 10. Qxe5+ Be7 11. Bf5 O-O 12. Bxg4 Nxg4 13. Qxd5 Bb4 14.
 Qxd8 Raxd8 15. d3 Bxc3 16. bxc3 Rfe8 17. Bg5 Rd5 18. c4 Rxg5 19. f3 Ne3 20. Rf2
 Nxc2 21. Rc1 Rge5 22. Kf1 Re1+ 23. Rxe1 Rxe1# 0-1`
 
+function SANtoUCI(sanMove: string, chess: Chess) {
+    const moveObj = chess.move(sanMove, { sloppy: true });
+    if (moveObj === null) {
+      throw new Error('Invalid SAN move');
+    }
+    let uciMove = moveObj.from + moveObj.to;
+    if (moveObj.promotion) {
+      uciMove += moveObj.promotion;
+    }
+    chess.undo(); // Undo the move to not affect the board state
+    return uciMove;
+  }
 
 
-export function getMovesListFromPGN() {
-    // stockfishWorker.onmessage = (e) => {
-    //     // Handle messages from the worker
-    //     console.log(e)
-    // };
-    // console.log("WWWW", stockfishWorker)
 
-    // // Sending messages to the worker
-    // stockfishWorker.postMessage('uci');
-    
-    
-
-
+export async function getMovesListFromPGN() {
     const chess = new Chess();
+    const uci = new UCIWrapper(stockfishWorker);
+    window.uci = uci;
+    await uci.wait_for_readyok();
+    
+    uci.init();
+    await timeout(50);
+    
+    uci.setDefaultOptions();
+    // await uci.wait_for_readyok();
+    alert("Hi");
+
+    // uci.setPosition(chess.fen());
+    const result = await uci.analyze({ depth: 20, timeout: 5000 });
+    console.log("result", result);
+    // uci.init();
+
+    // setTimeout(() => {
+    //     uci.setPosition(chess.fen());
+    //     uci.analyze().then((result) => {
+    //         console.log(result);
+    //     });
+    // }, 1000);
+
+    
+    
     chess.loadPgn(PGNString);
     const movesHistory = _.cloneDeep(chess.history());
     console.log(movesHistory)
