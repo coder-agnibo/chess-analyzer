@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Chessboard from 'chessboardjsx';
-import { getMovesListFromPGN, playMove } from "../utils/chessUtil";
+import { getMovesListFromPGN, playMove, analyzeGame } from "../utils/chessUtil";
 
 type povType = "white" | "black";
 
@@ -26,8 +26,9 @@ function App() {
   };
 
   useEffect(() => {
-    const movesList = getMovesListFromPGN()
-    animateMoves(movesList);
+    // const movesList = getMovesListFromPGN()
+    // animateMoves(movesList);
+    analyzeGame()
   }, []);
 
   return (

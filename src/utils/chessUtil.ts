@@ -52,20 +52,22 @@ function SANtoUCI(sanMove: string, chess: Chess) {
 
 export async function getMovesListFromPGN() {
     const chess = new Chess();
-    const uci = new UCIWrapper(stockfishWorker);
-    window.uci = uci;
-    await uci.wait_for_readyok();
-    
-    uci.init();
-    await timeout(50);
-    
-    uci.setDefaultOptions();
+
+
+    // const uci = new UCIWrapper(stockfishWorker);
+    // window.uci = uci;
+    // await uci.wait_for_readyok();
+    // uci.init();
+    // await timeout(50);    
+    // uci.setDefaultOptions();
+    // const result = await uci.analyze({ depth: 20, timeout: 5000 });
+    // console.log("result", result);
+
+
     // await uci.wait_for_readyok();
     alert("Hi");
 
     // uci.setPosition(chess.fen());
-    const result = await uci.analyze({ depth: 20, timeout: 5000 });
-    console.log("result", result);
     // uci.init();
 
     // setTimeout(() => {
@@ -99,3 +101,62 @@ export function playMove(move: string, startFen: string | undefined): string {
 
 
 
+export async function analyzeGame() {
+  const movesList = await getMovesListFromPGN(PGNString as string);
+
+  const sampleOutput: ChessMoveAnalysis = {
+    "move_no": 1,
+    "move": "e4",
+    "evaluation": "+0.37",
+    "top3_engine_lines": [
+        "e5 Nf3 Nc6 d4 exd4 Nxd4 Nf6 Nc3 Bb4",
+        "c5 Nf3 Nc6 d4 cxd4 Nxd4 e5 Nb3 Nf6 Bg5",
+        "e6 d4 d5 Nc3 Bb4 Qg4 Kf8 Bg5 Nf6 Qg3 dxe4 O-O-O Bxc3"
+    ],
+    "is_best_move": false,
+    "is_top3_moves": false,
+    "opening": "King's Pawn Game"
+}
+
+const chess = new Chess();
+const uci = new UCIWrapper(stockfishWorker);
+uci.init();
+window.uci = uci;
+window.stockfish = stockfishWorker;
+uci.setDefaultOptions();
+const uciMoves = SANtoUCI(movesList);
+
+// console.log(uciMoves);
+// alert("Hi")
+// uci.setPosition('startpos');
+// await uci.wait_for_readyok();
+// alert("hello")
+
+// const analysedMoves: ChessMoveAnalysis[] = [];
+
+// for (let movei in uciMoves) {
+//   const move = movesList[movei];
+//   const uciMove = uciMoves[movei];
+
+
+//   uci.sendCommand(`position moves ${uciMove}`);
+//   await uci.wait_for_readyok();
+//   const response = await uci.analyze({depth: 16});
+//   console.log(response);
+
+//   analysedMoves.push({
+//     move_no: parseInt(movei) + 1,
+//     move: move,
+//     evaluation: response.pvs[0].score.toString(),
+//     top3_engine_lines: response.pvs.map(pv => pv.pv.join(' ')),
+//     is_best_move: response.bestmove === uciMove,
+//     is_top3_moves: response.pvs.map(pv => pv.pv[0]).includes(uciMove),
+//     opening: ""//chess.pgn().split('\n')[0].split('"')[1]
+//   })
+
+//   // console.log(fen)
+// }
+// console.log(analysedMoves);
+// return analysedMoves;
+
+}
