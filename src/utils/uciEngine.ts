@@ -1,5 +1,6 @@
 import { timeout as timeoutFn } from "./timeout";
 
+
 type AnalysisResult = {
     pvs: string[];
     evaluation: number;
@@ -11,7 +12,7 @@ interface UCIOutput {
     depth: number;
     seldepth: number;
     multipv: number;
-    score: string; // Keeping it simple as a string. You can create a more complex structure if needed.
+    score: UCIScore; // Keeping it simple as a string. You can create a more complex structure if needed.
     nodes: number;
     nps: number;
     time: number;
@@ -47,6 +48,9 @@ export class UCIWrapper {
     // Send a command to the engine
     public sendCommand(command: string): void {
         console.log("DEBUG SEND:", command);
+        if(command == "isready") {
+            console.log("STOCKFISH DEBUG READY")
+        }
         if (!this.uciok && command != "uci" && command != "isready") {
             return;
         }
@@ -83,7 +87,7 @@ export class UCIWrapper {
         const tokens = uciString.split(' ');
         const infoObject: Partial<UCIOutput> = {};
         let key: keyof UCIOutput | '' = '';
-        let value: string | number;
+        let value: UCIScore | number | string | undefined = undefined;
         let isPv: boolean = false;
 
         for (let i = 0; i < tokens.length; i++) {
@@ -98,6 +102,7 @@ export class UCIWrapper {
                 key = token;
                 value = tokens[++i]; // 'cp' or 'mate'
                 value += ' ' + tokens[++i]; // score value
+                value = this.parseScore(value as string);
             } else if (token === 'pv') {
                 key = token;
                 isPv = true
@@ -161,16 +166,20 @@ export class UCIWrapper {
         });
     }
 
-    public wait_for_readyok(): Promise<void> {
+    public wait_for_readyok(): Promise<boolean> {
         return new Promise((resolve, _) => {
             if (!this.lock) {
                 this.lock = true;
-                this.worker.postMessage("isready");
+                this.sendCommand("isready");
                 this.callbackfn = (data: string) => {
                     if (data == "readyok") {
                         this.lock = false;
-                        resolve();
+                        this.callbackfn = undefined
+                        resolve(true);
+                        return;
                     }
+                    resolve(false);
+                    return;
                 }
             }
         });
@@ -209,17 +218,17 @@ export class UCIWrapper {
     public async setDefaultOptions(): Promise<boolean> {
         this.NNUE = true;
 
-        await this.wait_for_readyok();
+        // await this.wait_for_readyok();
         this.Threads = 8;
-        await this.wait_for_readyok();
+        // await this.wait_for_readyok();
         this.Hash = 16;
-        await this.wait_for_readyok();
+        // await this.wait_for_readyok();
         this.UCI_Elo = 3190;
-        await this.wait_for_readyok();
+        // await this.wait_for_readyok();
         this.UCI_AnalyseMode = true;
-        await this.wait_for_readyok();
+        // await this.wait_for_readyok();
         this.UCI_ShowWDL = true;
-        await this.wait_for_readyok();
+        // await this.wait_for_readyok();
         this.multipv = 3;
         await this.wait_for_readyok();
         return true;
@@ -231,6 +240,11 @@ export class UCIWrapper {
 
     // Set the position on the engine
     public setPosition(fen: string): void {
+        if (fen == "startpos") {
+            // this.sendCommand("position startpos");
+            this.sendCommand("ucinewgame");
+            return;
+        }
         this.sendCommand(`position fen ${fen}`);
     }
 
@@ -261,9 +275,7 @@ export class UCIWrapper {
                 // Process the analysis result
                 this.callbackfn = (data: string) => {
                     if (data.startsWith('info') && data.includes('depth')) {
-                        console.log("DEBUG LOGGG:", data)
                         const result = this.parseUCIOutput(data);
-                        console.log("DEBUG RESSSSU:", result)
                         if (result.depth === depth) {
                             const i = variations.length;
                             variations[i] = result;
