@@ -8,7 +8,7 @@ type AnalysisResult = {
 
 
 
-interface UCIOutput {
+export interface UCIOutput {
     depth: number;
     seldepth: number;
     multipv: number;
@@ -19,7 +19,7 @@ interface UCIOutput {
     pv: string[];
 }
 
-interface UCIScore {
+export interface UCIScore {
     type: 'cp' | 'mate';
     value: number;
     lowerbound: boolean;

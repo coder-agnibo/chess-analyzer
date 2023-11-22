@@ -1,5 +1,5 @@
 export default {
-    "move_list": [
+    "moveList": [
         {
             "remark": "Ah, the classic pawn to king four, a.k.a. e4. Solid, aggressive, and a bit of a show-off. It's the chess equivalent of flexing in the mirror.",
             "classification": "book",
