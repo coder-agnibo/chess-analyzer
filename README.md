@@ -1,4 +1,4 @@
-# React + TypeScript + Vite
+# AGNIS: The Chess Review App
 
 ## Steps to use this application
 
