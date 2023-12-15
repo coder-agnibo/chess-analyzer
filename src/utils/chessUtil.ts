@@ -4,7 +4,7 @@ import Stockfish from 'stockfish/src/stockfish-nnue-16.js?worker';
 import { UCIWrapper, UCIScore } from "./uciEngine";
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: '<OPENAI_API_KEY>', dangerouslyAllowBrowser: true });
+const openai = new OpenAI({ apiKey: '<YOUR_OPENAI_API_KEY_HERE>', dangerouslyAllowBrowser: true });
 
 declare global {
   interface Window {
